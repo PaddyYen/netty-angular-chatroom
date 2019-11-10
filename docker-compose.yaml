@@ -1,0 +1,33 @@
+version: "3"
+
+services:
+  chatroom:
+    image: paddy77763/netty_chatroom
+    networks:
+      - chatnetwork
+    ports:
+      - 80:80
+      - 8090:8090
+    depends_on:
+      - database
+      - redisdatabase
+      
+  database:
+    image: postgres:9.4-alpine
+    networks:
+      - chatnetwork
+    environment:
+      - POSTGRES_PASSWORD=demo
+      - POSTGRES_USER=demo
+      - POSTGRES_DB=demo
+    #volumes:
+     # - "./mydb:/var/lib/postgresql/data:z"
+      
+  redisdatabase:
+    image: redis:latest
+    networks:
+      - chatnetwork
+      
+networks:
+  chatnetwork:
+    
