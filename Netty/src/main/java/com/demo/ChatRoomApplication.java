@@ -18,63 +18,72 @@ import com.demo.config.TCPServer;
 import com.demo.handler.NettyWebSocketChannelInitializer;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
 
-@PropertySource(value= "classpath:/netty.properties")
+@PropertySource(value = "classpath:/netty.properties")
 @SpringBootApplication
 public class ChatRoomApplication {
-	
+
 	@Value("${tcp.port}")
-    private int tcpPort;
+	private int tcpPort;
 
-    @Value("${boss.thread.count}")
-    private int bossCount;
+	@Value("${boss.thread.count}")
+	private int bossCount;
 
-    @Value("${worker.thread.count}")
-    private int workerCount;
+	@Value("${worker.thread.count}")
+	private int workerCount;
 
-    @Value("${so.keepalive}")
-    private boolean keepAlive;
+	@Value("${so.keepalive}")
+	private boolean keepAlive;
 
-    @Value("${so.backlog}")
-    private int backlog;
-    
-    @Autowired
+	@Value("${so.backlog}")
+	private int backlog;
+
+	@Autowired
 	@Qualifier("somethingChannelInitializer")
 	private NettyWebSocketChannelInitializer nettyWebSocketChannelInitializer;
-    
-    public static void main(String[] args) throws Exception {
+
+	public static void main(String[] args) throws Exception {
 		ConfigurableApplicationContext context = SpringApplication.run(ChatRoomApplication.class, args);
 		TCPServer tcpServer = context.getBean(TCPServer.class);
-        tcpServer.start();
+		tcpServer.start();
 	}
-    
+
 	@SuppressWarnings("unchecked")
 	@Bean(name = "serverBootstrap")
-    public ServerBootstrap bootstrap() {
-        ServerBootstrap serverBootstrap = new ServerBootstrap();
-        serverBootstrap.group(bossGroup(), workerGroup())
-                .channel(NioServerSocketChannel.class)
-                .handler(new LoggingHandler(LogLevel.DEBUG))
-                .childHandler(nettyWebSocketChannelInitializer);
-        
-        Map<ChannelOption<?>, Object> tcpChannelOptions = tcpChannelOptions();
-        Set<ChannelOption<?>> keySet = tcpChannelOptions.keySet();
-        for (@SuppressWarnings("rawtypes") ChannelOption option : keySet) {
-        	serverBootstrap.option(option, tcpChannelOptions.get(option));
-        }
-        return serverBootstrap;
-    }
-	
+	public ServerBootstrap bootstrap() {
+		ServerBootstrap serverBootstrap = new ServerBootstrap();
+		serverBootstrap.group(bossGroup(), workerGroup())
+				.channel(NioServerSocketChannel.class)
+//				.channelFactory(new ChannelFactory<ServerChannel>() {
+//					@Override
+//					public ServerChannel newChannel() {
+//						return new NioServerSocketChannel();
+//					}
+//				})
+//				.handler(new LoggingHandler(LogLevel.DEBUG))
+				.childHandler(nettyWebSocketChannelInitializer);
+
+		Map<ChannelOption<?>, Object> tcpChannelOptions = tcpChannelOptions();
+		Set<ChannelOption<?>> keySet = tcpChannelOptions.keySet();
+		for (@SuppressWarnings("rawtypes")
+		ChannelOption option : keySet) {
+			serverBootstrap.childOption(option, tcpChannelOptions.get(option));
+		}
+		serverBootstrap.option(ChannelOption.SO_BACKLOG, backlog);
+		serverBootstrap.option(ChannelOption.SO_REUSEADDR, true);
+		return serverBootstrap;
+	}
+
 	@Bean(name = "tcpChannelOptions")
 	public Map<ChannelOption<?>, Object> tcpChannelOptions() {
 		Map<ChannelOption<?>, Object> options = new HashMap<ChannelOption<?>, Object>();
 		options.put(ChannelOption.SO_KEEPALIVE, keepAlive);
-		options.put(ChannelOption.SO_BACKLOG, backlog);
+		options.put(ChannelOption.SO_REUSEADDR, true);
+		options.put(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
 		return options;
 	}
 
