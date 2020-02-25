@@ -1,5 +1,4 @@
-# netty-angular-chatroom test2
-1.Netty and Angular are folders of source codes.
+# netty-angular-chatroom test333.Netty and Angular are folders of source codes.
 2.docker-compose.yaml
 
   (1).Download it, and put it on linux environment such as CentOS7.
